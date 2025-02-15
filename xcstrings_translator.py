@@ -1,10 +1,11 @@
 import json
 import os
 import deepl
+import argparse
 from typing import Dict, List
 from dotenv import load_dotenv
 
-def extract_and_translate(input_file: str, target_languages: List[str], api_key: str) -> Dict:
+def extract_and_translate(input_file: str, target_languages: List[str], api_key: str, verbose: bool = False) -> Dict:
     """
     Extract strings from Xcstrings file and translate them using DeepL API.
     
@@ -12,6 +13,7 @@ def extract_and_translate(input_file: str, target_languages: List[str], api_key:
         input_file: Path to the Xcstrings file
         target_languages: List of target language codes (e.g., ['FR', 'ES'])
         api_key: DeepL API key
+        verbose: Whether to print detailed progress messages
     
     Returns:
         Dictionary containing the complete Xcstrings structure with translations
@@ -53,6 +55,8 @@ def extract_and_translate(input_file: str, target_languages: List[str], api_key:
             # Translate to target languages
             if english_text:
                 for lang in target_languages:
+                    if verbose:
+                        print(f"Translating to {lang}: {key}")
                     try:
                         result = translator.translate_text(
                             english_text,
@@ -65,7 +69,9 @@ def extract_and_translate(input_file: str, target_languages: List[str], api_key:
                             }
                         }
                     except Exception as e:
-                        print(f"Error translating {key} to {lang}: {str(e)}")
+                        error_msg = f"Error translating {key} to {lang}: {str(e)}"
+                        if verbose:
+                            print(error_msg)
                         output_data['strings'][key]['localizations'][lang.lower()] = {
                             "stringUnit": {
                                 "state": "error",
@@ -80,7 +86,24 @@ def save_xcstrings(translations: Dict, output_file: str):
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(translations, f, ensure_ascii=False, indent=2)
 
+def parse_languages(languages_str: str) -> List[str]:
+    """Parse comma-separated language codes into a list."""
+    return [lang.strip().upper() for lang in languages_str.split(',')]
+
 def main():
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description='Translate Xcstrings file using DeepL API')
+    parser.add_argument('--in', dest='input_languages', required=True,
+                      help='Comma-separated list of target language codes (e.g., FR,DE,IT,ES)')
+    parser.add_argument('--input', default="Localizable.xcstrings",
+                      help='Input Xcstrings file path (default: Localizable.xcstrings)')
+    parser.add_argument('--output', default="Localizable_translated.xcstrings",
+                      help='Output Xcstrings file path (default: Localizable_translated.xcstrings)')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                      help='Display detailed progress messages')
+    
+    args = parser.parse_args()
+    
     # Load environment variables
     load_dotenv()
     
@@ -89,21 +112,25 @@ def main():
     if not API_KEY:
         raise ValueError("Please set DEEPL_API_KEY environment variable")
     
-    INPUT_FILE = "Localizable.xcstrings"
-    OUTPUT_FILE = "Localizable_translated.xcstrings"
-    TARGET_LANGUAGES = ['FR', 'ES', 'DE']  # Add more languages as needed
+    # Parse target languages
+    target_languages = parse_languages(args.input_languages)
+    
+    if args.verbose:
+        print("\nStarting translation process...")
+        print(f"Target languages: {', '.join(target_languages)}")
     
     # Extract and translate
-    translated_xcstrings = extract_and_translate(INPUT_FILE, TARGET_LANGUAGES, API_KEY)
+    translated_xcstrings = extract_and_translate(args.input, target_languages, API_KEY, args.verbose)
     
     # Save results in Xcstrings format
-    save_xcstrings(translated_xcstrings, OUTPUT_FILE)
+    save_xcstrings(translated_xcstrings, args.output)
     
     # Print summary
     print("\nTranslation completed!")
-    print(f"Output file: {OUTPUT_FILE}")
+    print(f"Input file: {args.input}")
+    print(f"Output file: {args.output}")
     print("\nTranslated languages:")
-    for lang in TARGET_LANGUAGES:
+    for lang in target_languages:
         print(f"- {lang}")
 
 if __name__ == "__main__":

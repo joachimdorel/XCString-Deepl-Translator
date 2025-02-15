@@ -38,6 +38,7 @@ source .venv/bin/activate
 
 # Activate it on Windows:
 .venv\Scripts\activate
+
 ```
 
 3. Install required packages:
@@ -61,25 +62,34 @@ DEEPL_API_KEY=your-deepl-api-key-here
 
 2. Run the translation script:
 ```bash
-python xcstrings_translator.py
+python xcstrings_translator.py --in=FR,DE,IT,ES
+```
+
+#### Additional options:
+- ```--in```: Required. Comma-separated list of target language codes (e.g., FR,DE,IT,ES)
+- ```--input```: Optional. Specify input file path (default: Localizable.xcstrings)
+- ```--output```: Optional. Specify output file path (default: Localizable_translated.xcstrings)
+- ```-v```, ```--verbose```: Optional. Display detailed progress messages during translation
+
+
+###### Examples:
+
+Basic usage:
+```
+python xcstrings_translator.py --in=FR,DE,IT,ES
+```
+
+With custom input/output files:
+```
+python xcstrings_translator.py --in=FR,DE,IT,ES --input=./input.xcstrings --output=./output.xcstrings
+```
+
+With verbose output:
+```
+python xcstrings_translator.py --in=FR,DE,IT,ES -v
 ```
 
 3. The translated file will be generated as `Localizable_translated.xcstrings`
-
-## Adding New Languages
-
-To add support for new languages:
-
-1. First, add the language in Xcode as described in the "Before You Start" section
-2. Open the `xcstrings_translator.py` file
-3. Find the `TARGET_LANGUAGES` list in the `main()` function:
-```python
-TARGET_LANGUAGES = ['FR']  # Add more languages as needed
-```
-4. Add your desired language codes. For example, to add Spanish and German:
-```python
-TARGET_LANGUAGES = ['FR', 'ES', 'DE']
-```
 
 ### Supported Language Codes
 
@@ -119,6 +129,10 @@ Common errors and solutions:
 
 2. "File not found":
    - Make sure `Localizable.xcstrings` is in the same directory as the script
+
+3. "Invalid language code":
+   - Check that your language codes are correctly formatted (e.g., FR, DE, ES)
+   - Verify that the languages are supported by DeepL
 
 ## Contributing
 
